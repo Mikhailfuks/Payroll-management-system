@@ -1,0 +1,148 @@
+
+CREATE TABLE employee (
+  emp_id INTEGER PRIMARY KEY check (emp_id > 0),
+  position_id int not null,
+  fname varchar(255) NOT NULL,
+  lname varchar(255) NOT NULL,
+  address varchar(255),
+  email varchar(255) NOT NULL unique,
+  phoneNo varchar(10),
+  age int,
+  check (age>=18),
+  foreign key(position_id) references position
+); 
+/// We check the address, the age of the employees, but because of the unique we cannot receive duplicate emails
+
+CREATE TABLE department (
+  dep_id INTEGER PRIMARY KEY check (dep_id > 0),
+  dep_name varchar(255) NOT NULL unique
+);
+/// Create a department table and select who gets access to work
+
+CREATE TABLE position (
+  position_id INTEGER PRIMARY KEY check (position_id > 0),
+  dep_id int not null,
+  position_name varchar(255) NOT NULL DEFAULT 'f',
+  foreign key(dep_id) references department
+);
+
+CREATE TABLE allowance (
+  allow_id INTEGER PRIMARY KEY check (allow_id > 0),
+  allow_name varchar(255) NOT NULL DEFAULT 'l',
+  allow_amount int NOT NULL
+);
+/// We make passes to get to work
+-- create a deductions table
+CREATE TABLE deductions (
+  deduc_id INTEGER PRIMARY KEY check (deduc_id > 0),
+  deduc_name varchar(255) NOT NULL DEFAULT 'l',
+  deduc_amount int NOT NULL
+);
+/// We are making a table thanks to which we can choose how the deductions from wages go
+
+CREATE TABLE payroll(
+  payroll_id INTEGER PRIMARY KEY check (payroll_id > 0),
+  emp_id int not null,
+  allow_id int,
+  deduc_id int,
+  basePay_id int not null,
+  dateFrom date NOT NULL,
+  dateTo date NOT NULL,
+  netPay int not null,
+  foreign key(emp_id) references employee,
+  foreign key(allow_id) references allowance,
+  foreign key(deduc_id) references deductions,
+  foreign key(basePay_id) references basePay
+);
+/// We make a table for calculating wages, we also make a link to deductions, benefits and tax deductions
+
+CREATE TABLE basePay (
+  basePay_id INTEGER PRIMARY KEY check (basePay_id > 0),
+  type varchar(255) NOT NULL DEFAULT 'H',
+  amount int NOT NULL,
+  position_id int not null,
+  foreign key(position_id) references position
+);
+/// Creating a table that has a key that stores employee information by default
+-- insert some values in the employee table
+insert into employee values ( 1, 2, 'Rahul', 'Sharma', '1234 6 ave Surrey', 'rahul@gmail.com', '7513497852', 25);
+insert into employee values ( 2, 4, 'Mandeep', 'Kaur', '18354 96 st Cloverdale', 'mandeep@gmail.com', '2523497852', 33);
+insert into employee values ( 3, 1, 'Vijay', 'Khanna', '18282 181A st Surrey', 'vijay@yahoo.com', '6048993497', 28);
+insert into employee values ( 4, 2, 'Sonam', 'Sharda', '13476 134 st Surrey', 'sonam@hotmail.com', '7785134852', 26);
+
+
+insert into department values( 1, 'IT');
+insert into department values( 2, 'Accounting');
+insert into department values( 3, 'Marketing');
+
+insert into position values( 1, 1, 'Jr. Developer');
+insert into position values( 2, 1, 'Database administrator');
+insert into position values( 3, 2, 'Accounting clerk');
+insert into position values( 4, 1, 'Marketing Specialist');
+
+insert into allowance values( 1, 'miles pay', 10);
+insert into allowance values( 2, 'meals pay', 20);
+insert into allowance values( 3, 'accomodation pay', 100);
+insert into allowance values( 4, 'statutory pay', 75);
+/// We include allowances for some things and make a certain amount for them
+
+insert into deductions values( 1, 'Canada pension plan', 0.057);
+insert into deductions values( 2, 'employment insurance', 0.0158);
+insert into deductions values( 3, 'unpaid leave', 0.033);
+///We determine the value of basic deductions
+
+insert into basePay values( 1,'Salary', 3800, 2); 
+insert into basePay values( 2,'Hourly', 25, 1); 
+insert into basePay values( 3,'Salary', 3500, 3); 
+insert into basePay values( 4,'Hourly', 26, 4); 
+/// Вставляем значение базовое заработной платы 
+-- insert some values in the basePay table
+insert into payroll values(1, 2, 4, 1, 2, '2022-11-01', '2022-11-15','1700');
+insert into payroll values(2, 3, 1, 1, 1, '2022-11-01', '2022-11-15','1500');
+
+-- insert a new position
+insert into position values( 5 , 2, 'Developer');
+
+UPDATE position
+SET position_name = 'HR Manager'
+WHERE position_id = 5;
+/// Указываем позицию HR Менеджера и определяем его id 
+-- delete data of position id = 5
+delete from position WHERE position_id = 5;
+
+select max(amount) from basePay where type = 'Hourly';
+select min(amount) from basePay where type = 'Salary';
+/// We determine the amount of the minimum and maximum wages
+-- Count the number of employees working in a company.
+select count(emp_id) from employee;
+
+
+select * from employee where phoneNo not null AND AGE < 28;
+
+-- Show the corresponding job position of employees
+-- while left outer joining the employee and position table.
+select employee.fname, position.position_name from
+employee left outer join position on employee.position_id = position.position_id;
+.
+select amount from basePay where position_id =(select position_id from employee 
+where lname="Sharma");
+
+select fname , lname from employee where 
+emp_id = (select emp_id from payroll where netPay = 1500);
+/// We will deal with the visibility of the payment
+
+SELECT department.dep_name, position.position_name
+FROM department
+LEFT JOIN position ON department.dep_id = position.dep_id
+ORDER BY department.dep_name;
+/// we combine the tables with this we can see the position of the employee
+
+select p.position_name, b.type, b.amount from
+position p left join basepay b ON p.position_id = b.position_id
+ORDER by type, amount;
+/// объединяем таблицы и можем отобразить сумму базвойо оплаты 
+
+select emp_id, fname, lname from employee e 
+where exists (select * from payroll p
+where e.emp_id = p.emp_id);
+///  We get the employee ID to see his first and last name and create a payment register for withdrawing funds
